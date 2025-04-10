@@ -3,7 +3,7 @@ name: CI/CD - v1.3.0 OTP Auth
 on:
   push:
     branches:
-      - v1.3.0-otp-auth
+      - v1.3.0-OTP-Auth
 
 jobs:
   deploy:
