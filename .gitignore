@@ -1,0 +1,17 @@
+# Ignore .Renviron file with credentials
+.Renviron
+
+# R session files
+.Rhistory
+.RData
+.Rproj.user/
+
+# Cache and renv
+__pycache__/
+.Rcheck/
+renv/library/
+renv/staging/
+
+# OS-specific
+.DS_Store
+Thumbs.db
