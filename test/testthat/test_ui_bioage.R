@@ -2,7 +2,7 @@ library(testthat)
 library(shinytest2)
 
 test_that("UI inputs are present and functional", {
-  app <- AppDriver$new(app_dir ="D:/DS/R/AWS/" , seed = 101)
+  app <- AppDriver$new(app_dir ="." , seed = 101)
   
   # Test text inputs
   app$set_inputs(Name = "Wikki")
