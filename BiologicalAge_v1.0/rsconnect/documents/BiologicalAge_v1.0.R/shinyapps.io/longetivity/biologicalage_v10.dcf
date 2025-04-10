@@ -1,0 +1,10 @@
+name: biologicalage_v10
+title:
+username: longetivity
+account: longetivity
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 13641675
+bundleId: 9571588
+url: https://longetivity.shinyapps.io/biologicalage_v10/
+version: 1

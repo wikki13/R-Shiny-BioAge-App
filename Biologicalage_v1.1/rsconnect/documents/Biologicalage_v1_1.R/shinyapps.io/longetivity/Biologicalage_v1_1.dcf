@@ -1,0 +1,12 @@
+name: Biologicalage_v1_1
+title: Biologicalage_v1_1
+username: longetivity
+account: longetivity
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 13785900
+bundleId: 9687347
+url: https://longetivity.shinyapps.io/Biologicalage_v1_1/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
