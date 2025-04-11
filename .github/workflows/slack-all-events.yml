@@ -1,0 +1,55 @@
+name: Slack Notifications for BioAge
+
+on:
+  push:
+    branches:
+      - v1.3.0
+  pull_request:
+    branches:
+      - v1.3.0
+  workflow_run:
+    workflows: ["Build and Deploy"]  # Optional — link to another workflow
+    types:
+      - completed
+
+jobs:
+  slack-notify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Notify Slack on Push or PR
+        if: github.event_name == 'push' || github.event_name == 'pull_request'
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+          --data '{
+            "text": ":dna: *[BioAge App]* — Code update pushed! \n
+            *Event:* '"${{ github.event_name }}"'\n
+            *Branch:* '"${{ github.ref_name }}"'\n
+            *Author:* '"${{ github.actor }}"'\n
+            *Message:* '"${{ github.event.head_commit.message || github.event.pull_request.title }}"'\n
+            *Commit:* <https://github.com/${{ github.repository }}/commit/${{ github.sha }}|View Commit>"
+          }' ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Notify Slack on Workflow Success
+        if: github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success'
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+          --data '{
+            "text": ":white_check_mark: *[BioAge App]* — Workflow Succeeded!\n
+            *Workflow:* '"${{ github.event.workflow_run.name }}"'\n
+            *Branch:* '"${{ github.event.workflow_run.head_branch }}"'\n
+            *Status:* Success\n
+            *Link:* <${{ github.event.workflow_run.html_url }}|View Run>"
+          }' ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Notify Slack on Workflow Failure
+        if: github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'failure'
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+          --data '{
+            "text": ":x: *[BioAge App]* — Workflow Failed!\n
+            *Workflow:* '"${{ github.event.workflow_run.name }}"'\n
+            *Branch:* '"${{ github.event.workflow_run.head_branch }}"'\n
+            *Status:* Failed\n
+            *Link:* <${{ github.event.workflow_run.html_url }}|View Run>"
+          }' ${{ secrets.SLACK_WEBHOOK_URL }}
