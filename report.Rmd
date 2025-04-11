@@ -1,5 +1,5 @@
 ---
-title: "BioAge Report"
+title: "BioAge Report."
 output: pdf_document
 author: "BioAge Tool"
 geometry: margin=1in
