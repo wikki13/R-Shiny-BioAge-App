@@ -1,0 +1,20 @@
+name: Post Commit Info to Slack
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  slackNotify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Post commit info to Slack
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+          --data "$(jq -n \
+            --arg msg ":rocket: *New Commit Pushed to Main Branch* by \($GITHUB_ACTOR)\n*Message:* $(git log -1 --pretty=format:'%s')\n*Commit:* <https://github.com/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha:0:7 }}>" \
+            '{text: $msg}')" \
+          ${{ secrets.SLACK_WEBHOOK_URL }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
