@@ -2,7 +2,7 @@ name: Build & Deploy Shiny App
 
 on:
   push:
-    branch: v1.3.0-OTP-Auth
+    branches: [v1.3.0-OTP-Auth]
   workflow_dispatch:
 
 jobs:
