@@ -3,7 +3,7 @@ name: Build and Deploy R Shiny App
 on:
   push:
     branches:
-      - main
+      -  v1.3.0-OTP-Auth
 
 env:
   R_VERSION: "4.3.1"
