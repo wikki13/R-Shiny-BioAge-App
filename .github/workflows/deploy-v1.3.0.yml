@@ -1,55 +1,87 @@
-name: CI/CD - v1.3.0 OTP Auth
+trigger:
+  branches:
+    include:
+      - main
 
-on:
-  push:
-    branches:
-      - v1.3.0-OTP-Auth
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  R_VERSION: '4.3.1'
 
 jobs:
-  deploy:
-    runs-on: ubuntu-latest
-
+  - job: Build
+    displayName: "Build R Shiny App"
     steps:
-    - name: Checkout repo
-      uses: actions/checkout@v3
+      - script: |
+          sudo apt-get update -y
+          sudo apt-get install -y libcurl4-openssl-dev libssl-dev libxml2-dev gdebi-core
+        displayName: 'Install system dependencies'
 
-    - name: Setup R
-      uses: r-lib/actions/setup-r@v2
+      - script: |
+          sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 'E298A3A825C0D65DFD57CBB651716619E084DAB9'
+          sudo add-apt-repository "deb https://cloud.r-project.org/bin/linux/ubuntu jammy-cran40/"
+          sudo apt-get update -y
+          sudo apt-get install -y r-base
+        displayName: 'Install R'
 
-    - name: Cache packages
-      uses: actions/cache@v3
-      with:
-        path: ${{ env.R_LIBS_USER }}
-        key: ${{ runner.os }}-r-${{ hashFiles('**/renv.lock') }}
-        restore-keys: ${{ runner.os }}-r-
+      - script: |
+          Rscript -e 'install.packages("renv", repos = "https://cloud.r-project.org")'
+          Rscript -e 'renv::restore()'
+        displayName: 'Restore R environment with renv'
 
-    - name: Install system dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y libmariadb-dev
+      - script: |
+          Rscript -e 'install.packages("rsconnect", repos = "https://cloud.r-project.org")'
+        displayName: 'Install rsconnect'
 
-    - name: Restore dependencies
-      run: |
-        Rscript -e 'install.packages("renv")'
-        Rscript -e 'renv::restore()'
+      - task: PublishBuildArtifacts@1
+        inputs:
+          PathtoPublish: '.'  # Path to publish
+          ArtifactName: 'bioage-app'
+          publishLocation: 'Container'
 
-    - name: Lint code
-      run: |
-        Rscript -e 'install.packages("lintr")'
-        Rscript -e 'lintr::lint_dir()'
+  - job: Deploy
+    displayName: "Deploy to shinyapps.io"
+    dependsOn: Build
+    steps:
+      - task: DownloadBuildArtifacts@0
+        inputs:
+          buildType: 'current'
+          downloadType: 'single'
+          artifactName: 'bioage-app'
+          downloadPath: '$(System.DefaultWorkingDirectory)/bioage-app'
 
-    - name: Run tests
-      run: |
-        Rscript -e 'install.packages("testthat")'
-        Rscript -e 'testthat::test_dir("test/testthat")'
+      - script: |
+          sudo apt-get update -y
+          sudo apt-get install -y libcurl4-openssl-dev libssl-dev libxml2-dev gdebi-core r-base
+        displayName: 'Install R and dependencies'
 
-    - name: Deploy to shinyapps.io
-      env:
-        SHINYAPPS_NAME: ${{ secrets.SHINYAPPS_NAME }}
-        SHINYAPPS_ACCOUNT: ${{ secrets.SHINYAPPS_ACCOUNT }}
-        SHINYAPPS_TOKEN: ${{ secrets.SHINYAPPS_TOKEN }}
-        SHINYAPPS_SECRET: ${{ secrets.SHINYAPPS_SECRET }}
-      run: |
-        Rscript -e 'install.packages("rsconnect")'
-        Rscript -e "rsconnect::setAccountInfo(name=Sys.getenv('SHINYAPPS_ACCOUNT'), token=Sys.getenv('SHINYAPPS_TOKEN'), secret=Sys.getenv('SHINYAPPS_SECRET'))"
-        Rscript -e "rsconnect::deployApp(appName=Sys.getenv('SHINYAPPS_NAME'))"
+      - script: |
+          echo "Installing rsconnect and setting account info..."
+          Rscript -e 'install.packages("rsconnect", repos = "https://cloud.r-project.org")'
+          Rscript -e '
+            rsconnect::setAccountInfo(
+              name = Sys.getenv("SHINYAPPS_NAME"),
+              token = Sys.getenv("SHINYAPPS_TOKEN"),
+              secret = Sys.getenv("SHINYAPPS_SECRET")
+            )
+          '
+        env:
+          SHINYAPPS_NAME: $(SHINYAPPS_NAME)
+          SHINYAPPS_TOKEN: $(SHINYAPPS_TOKEN)
+          SHINYAPPS_SECRET: $(SHINYAPPS_SECRET)
+        displayName: 'Configure rsconnect'
+
+      - script: |
+          Rscript -e '
+            rsconnect::deployApp(
+              appDir = "$(System.DefaultWorkingDirectory)/bioage-app",
+              appName = "bioage-otp-auth",
+              account = Sys.getenv("SHINYAPPS_NAME")
+            )
+          '
+        env:
+          SHINYAPPS_NAME: $(SHINYAPPS_NAME)
+          SHINYAPPS_TOKEN: $(SHINYAPPS_TOKEN)
+          SHINYAPPS_SECRET: $(SHINYAPPS_SECRET)
+        displayName: 'Deploy Shiny App'
